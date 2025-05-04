@@ -13,6 +13,10 @@
 		B50955A92B5A71D200B427FC /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B50955A82B5A71D200B427FC /* Preview Assets.xcassets */; };
 		B50955B12B5A775700B427FC /* BLEManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B50955B02B5A775700B427FC /* BLEManager.swift */; };
 		FD47FC362DB7396200D6F3EB /* CustomKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD47FC352DB7396200D6F3EB /* CustomKeyboard.swift */; };
+		FD69B5F72DBB39C200B55E50 /* DataPoints.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD69B5F62DBB39C200B55E50 /* DataPoints.swift */; };
+		FD69B5F92DBB3DE200B55E50 /* GraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD69B5F82DBB3DE200B55E50 /* GraphView.swift */; };
+		FDF1BDE22DB8394F00F88F9E /* PopUpError.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF1BDE12DB8394F00F88F9E /* PopUpError.swift */; };
+		FDF80B6F2DBEFB9C00381BEB /* info.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF80B6E2DBEFB9C00381BEB /* info.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +28,10 @@
 		B50955AF2B5A76A900B427FC /* ESP32-BLE-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "ESP32-BLE-Info.plist"; sourceTree = SOURCE_ROOT; };
 		B50955B02B5A775700B427FC /* BLEManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEManager.swift; sourceTree = "<group>"; };
 		FD47FC352DB7396200D6F3EB /* CustomKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomKeyboard.swift; sourceTree = "<group>"; };
+		FD69B5F62DBB39C200B55E50 /* DataPoints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPoints.swift; sourceTree = "<group>"; };
+		FD69B5F82DBB3DE200B55E50 /* GraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphView.swift; sourceTree = "<group>"; };
+		FDF1BDE12DB8394F00F88F9E /* PopUpError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopUpError.swift; sourceTree = "<group>"; };
+		FDF80B6E2DBEFB9C00381BEB /* info.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = info.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +87,10 @@
 			children = (
 				B50955B02B5A775700B427FC /* BLEManager.swift */,
 				FD47FC352DB7396200D6F3EB /* CustomKeyboard.swift */,
+				FDF1BDE12DB8394F00F88F9E /* PopUpError.swift */,
+				FD69B5F62DBB39C200B55E50 /* DataPoints.swift */,
+				FD69B5F82DBB3DE200B55E50 /* GraphView.swift */,
+				FDF80B6E2DBEFB9C00381BEB /* info.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -154,9 +166,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				B50955A42B5A71D100B427FC /* ContentView.swift in Sources */,
+				FDF80B6F2DBEFB9C00381BEB /* info.swift in Sources */,
 				B50955B12B5A775700B427FC /* BLEManager.swift in Sources */,
+				FD69B5F92DBB3DE200B55E50 /* GraphView.swift in Sources */,
 				B50955A22B5A71D100B427FC /* ESP32_BLEApp.swift in Sources */,
 				FD47FC362DB7396200D6F3EB /* CustomKeyboard.swift in Sources */,
+				FD69B5F72DBB39C200B55E50 /* DataPoints.swift in Sources */,
+				FDF1BDE22DB8394F00F88F9E /* PopUpError.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

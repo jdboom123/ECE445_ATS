@@ -35,6 +35,11 @@ class BLEManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
     @Published var peripherals: [Peripheral] = []
     @Published var isConnected = false // Indicates if the app is connected to a peripheral.
     @Published var bootButonState = false // true - pressed, false - released
+    @Published var graphView = false
+    @Published var velocityPointsArray = DataPointsArray(dataPoints:[])
+    @Published var anglePointsArray = DataPointsArray(dataPoints:[])
+    
+    @Published var recordData : Bool = false
 
     override init() {
         super.init()
@@ -81,8 +86,8 @@ class BLEManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
 
     // Called when a peripheral is discovered during scanning.
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String: Any], rssi RSSI: NSNumber) {
-        print(peripheral)
-        if peripheral.name?.contains("ESP32") ?? false {
+//        print(peripheral)
+        if peripheral.name?.contains("ATS Microcontroller") ?? false {
             let adsServiceUUIDs = (advertisementData[CBAdvertisementDataServiceUUIDsKey] as? [CBUUID])?.compactMap({ data in
                 data.uuidString
             })
@@ -150,6 +155,36 @@ class BLEManager: NSObject, ObservableObject, CBCentralManagerDelegate, CBPeriph
 //                let buttonState = data.first == 1
 //              bootButonState = buttonState
 //                print("BOOT Button State: \(buttonState)")
+//                let dataPacket = String(data: data, encoding: .utf8)
+                
+                if let dataPacket = String(data: data, encoding: .utf8) {
+                    let separatedData = dataPacket.split(separator: " ")
+                    print(dataPacket)
+                    
+                    // ESP started recording
+                    if dataPacket == "Recording Started!"{
+                        graphView = false
+                        recordData = true
+                        velocityPointsArray.dataPoints.removeAll()
+                        anglePointsArray.dataPoints.removeAll()
+                    }
+                    // ESP stopped recording
+                    else if dataPacket == "Recording Ending!"{
+                        graphView = true
+                        recordData = false
+                    }
+                    // Data is being sent in between
+                    else{
+                        if recordData{
+                            if let time = Double(separatedData[0]), let velocity = Double(separatedData[1]), let angle = Double(separatedData[2]){
+                                velocityPointsArray.dataPoints.append((time, velocity))
+                                anglePointsArray.dataPoints.append((time,angle))
+                        }
+                        }
+
+                    }
+                }
+                
             }
         }
     }

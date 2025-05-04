@@ -7,6 +7,8 @@
 
 import SwiftUI
 import Combine
+import Charts
+
 
 struct ContentView: View {
 
@@ -21,22 +23,30 @@ struct ContentView: View {
     @State private var cancellable: AnyCancellable?
     
     // Added variables
-    let exercises = ["Bench Press", "Weighted Squat", "Deadlift"]
+    let exercises = ["Bench Press", "Weighted Squat"]
+    let exerciseBLE = ["BenchPress", "WeightedSquat"]
     @State var choiceMade = "Choose Exercise"
+    @State var selectedExercise = ""
+   
+    @State var isPopUpActive = false
     
     @State private var thresholdVelocity: String = ""
     @State var testVelocity: String = ""
     @State var validVelocity: Bool = false
     @FocusState private var isActive: Bool
     let formatter = NumberFormatter()
+    
+    @State var isGraphActive = false
+    @State var thresholdSetting = false
 
     var body: some View {
         NavigationStack {
+            ZStack{
             VStack(alignment: .leading) {
-                if bleManager.peripherals.isEmpty {
-                    ProgressView("Searching for Athletic Tracking Sensors")
-                        .progressViewStyle(.circular)
-                } else if bleManager.isConnected {
+                 if bleManager.peripherals.isEmpty {
+                     ProgressView("Searching for Athletic Tracking Sensors")
+                         .progressViewStyle(.circular)
+                 } else if bleManager.isConnected {
                     List {
                         Section("Exercise Selection") {
                             exerciseTable
@@ -45,54 +55,110 @@ struct ContentView: View {
                             velocityTextBox
                             validVelocityText
                         }
+                        Section("Threshold Settings"){
+                            thresholdControl
+                        }
                         Button("Send Data") {
-                            if validVelocity{
-                                bleManager.sendTextValue("Selected Exercise: \(choiceMade), Target Velocity: \(thresholdVelocity)")
+                            if validVelocity && selectedExercise != ""{
+                                if !bleManager.recordData {
+                                    bleManager.sendTextValue("\(selectedExercise) \(thresholdVelocity)")
+                                    bleManager.graphView = false
+                                }
                             }
                             else{
+                                isPopUpActive = true
                                 
                             }
                         }
-
-                        Section("Traffic Light") {
-                            trafficLight
+                        
+                        
+                        NavigationLink("Present Velocity Graph") {
+                            if bleManager.graphView{
+                                VelocityGraphView(thresholdVelocityGraph: Double(thresholdVelocity) ?? 0,unidentifiableData: bleManager.velocityPointsArray.dataPoints)
+                            }
+                            else{
+                                PopUpError(popupActive: $isPopUpActive, title: "No Data to Present", message: "Record data using the Athletic Tracking Sensor to create a graph.", buttonTitle: "Okay", action: {})
+                            }
                         }
-
-                        Section("BOOT Button State") {
-                            receivedBoolen
+                        
+                        NavigationLink("Present Angle Graph") {
+                            if bleManager.graphView{
+                                AngleGraphView(unidentifiableData: bleManager.anglePointsArray.dataPoints)
+                            }
+                            else{
+                                PopUpError(popupActive: $isPopUpActive, title: "No Data to Present", message: "Record data using the Athletic Tracking Sensor to create a graph.", buttonTitle: "Okay", action: {})
+                            }
                         }
+                        
+                        
                         Button("Disconnect") {
+                            bleManager.graphView = false
                             bleManager.disconnectFromPeripheral()
                             choiceMade = "Choose Exercise"
                             thresholdVelocity = ""
+                            isPopUpActive = false
+                            bleManager.velocityPointsArray.dataPoints.removeAll()
+                            bleManager.anglePointsArray.dataPoints.removeAll()
                         }
                         .foregroundStyle(.red)
                         .frame(maxWidth: .infinity, alignment: .center)
-
-//                        Button("Disconnect") {
-//                            bleManager.disconnectFromPeripheral()
-//                        }
-//                        .foregroundStyle(.red)
-//                        .frame(maxWidth: .infinity, alignment: .center)
+                        
+                        //                        Button("Disconnect") {
+                        //                            bleManager.disconnectFromPeripheral()
+                        //                        }
+                        //                        .foregroundStyle(.red)
+                        //                        .frame(maxWidth: .infinity, alignment: .center)
                     }
                     .onAppear {
-                        isEsp32LedEnabled = false
+                        thresholdSetting = false
                         sevenSegmentValue = 0
                         trafficLightColor = "RED"
                         isAutoSwitched = false
                         cancellable?.cancel()
                     }
+
                 } else {
-                    List(bleManager.peripherals) { peripheral in
-                        device(peripheral)
-                    }
-                    .refreshable {
-                        bleManager.refreshDevices()
-                    }
-                }
+                         List(bleManager.peripherals) { peripheral in
+                             device(peripheral)
+                         }
+                         .refreshable {
+                             bleManager.refreshDevices()
+                         }
+                     }
             }
             .navigationTitle("ATS Control")
+            .toolbar(content: {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    NavigationStack{
+                        HStack{
+                            NavigationLink(destination: InfoView()) {
+                                Image(systemName: "info.circle")
+                                    .resizable()
+                                    .frame(width: 35, height: 35)
+                                    .foregroundColor(.blue)
+                                    .padding()
+                            }
+                        }
+                        
+                    }
+                    .padding()
+                }
+            })
+                
+                
+            if isPopUpActive{
+                PopUpError(popupActive: $isPopUpActive, title: "Data is Invalid", message: "Please select a proper exercise and/or enter a proper number for the velocity", buttonTitle: "Okay", action: {})
+                    .onDisappear()
+            }
+//            if isPopUpActive && bleManager.graphView == false{
+//                PopUpError(popupActive: $isPopUpActive, title: "No Data to Present", message: "Record data using the Athletic Tracking Sensor to create a graph.", buttonTitle: "Okay", action: {})
+//                }
+            }
+//            if isGraphActive{
+//                VelocityGraphView(unidentifiableData: bleManager.dataPointsArray.dataPoints)
+//            }
         }
+        
     }
     
     
@@ -103,7 +169,14 @@ struct ContentView: View {
             ForEach(exercises, id: \.self) { exercise in
                 Button(action: {
                     choiceMade = exercise
-                    print("\(exercise) selected")
+                    switch choiceMade{
+                    case exercises[0]:
+                        selectedExercise = exerciseBLE[0]
+                    case exercises[1]:
+                        selectedExercise = exerciseBLE[1]
+                    default:
+                        selectedExercise = ""
+                    }
                 }) {
                     Text(exercise)
                 }
@@ -146,6 +219,29 @@ struct ContentView: View {
         else{
             return Text("Input is invalid!")
                 .foregroundStyle(.red)
+        }
+    }
+    
+    var thresholdControl: some View {
+        VStack{
+            if thresholdSetting{
+                Text("Stay Over Threshold")
+                    .font(.title)
+                    .bold()
+            }
+            else{
+                Text("Stay Under Threshold")
+                    .font(.title)
+                    .bold()
+            }
+            Toggle("",
+                   systemImage: "lightbulb.led",
+                   isOn: $thresholdSetting
+            )
+            .foregroundStyle(.primary)
+            .onChange(of: thresholdSetting) { _, newValue in
+                bleManager.sendTextValue(newValue ? "1":"0" )
+            }
         }
     }
     
@@ -265,6 +361,158 @@ struct ContentView: View {
             }
         }
     }
+}
+
+struct VelocityGraphView: View {
+    @State var timePoint : Double?
+    var thresholdVelocityGraph : Double
+    var unidentifiableData : [(Double, Double)]
+    var identifiableData: [VelocityPoint] {
+        unidentifiableData.map { VelocityPoint(time: $0.0, velocity: $0.1) }
+    }
+    
+    
+//    var selectedVelocity: Double? {
+//        guard let timePoint else {
+//            print("Bad Time: Error 1")
+//            return 0
+//        }
+//        
+//        var low = 0
+//        var high = identifiableData.count - 1
+//        var rounded_val = round(1000*timePoint)/1000
+//
+//        while low <= high {
+//            let mid = (low + high) / 2
+//            let midTime = identifiableData[mid].time
+//            
+//            if mid + 1 < identifiableData.count {
+//                let nextTime = identifiableData[mid + 1].time
+//                if midTime <= rounded_val && rounded_val <= nextTime{
+//                    return identifiableData[mid].velocity
+//                }
+//            }
+//            
+//            if timePoint < midTime {
+//                high = mid - 1
+//            } else {
+//                low = mid + 1
+//            }
+//        }
+//
+//        return identifiableData.last?.velocity ?? 0
+//    }
+    
+    var body: some View {
+        VStack{
+            Text("Velocity")
+                .font(.title)
+                .bold()
+            Chart(identifiableData){
+                RuleMark(y: .value("Threshold Velocity", thresholdVelocityGraph)) // acquired from https://www.youtube.com/watch?v=4utsyqhnS4g&ab_channel=SeanAllen
+                    .foregroundStyle(Color.red)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [5]))
+                LineMark(x: .value("Time", $0.time), y: .value("Velocity", $0.velocity))
+                    .interpolationMethod(.catmullRom)
+                // Although the graph does not seem that smooth, it helps with getting velocity values
+                
+                if let timePoint{
+                    RuleMark(x: .value("Time", timePoint))
+                        .foregroundStyle(.secondary.opacity(0.3))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5]))
+                }
+            }
+            .frame(width: UIScreen.main.bounds.width, height: 400)
+            .chartScrollableAxes(.horizontal) // from https://www.youtube.com/watch?v=9nQh5QofS8c&ab_channel=StewartLynch
+            
+//            .chartXSelection(value: $timePoint)
+        }
+    }
+    
+}
+
+struct AngleGraphView: View {
+    @State var timePoint : Double?
+    var unidentifiableData : [(Double, Double)]
+    var identifiableData: [AnglePoint] {
+        unidentifiableData.map { AnglePoint(time: $0.0, angle: $0.1) }
+    }
+    
+//    var selectedAngle: Double? {
+//        guard let timePoint else {
+//            print("Bad Time: Error 1")
+//            return 0
+//        }
+//        
+//        var low = 0
+//        var high = identifiableData.count - 1
+//
+//        while low <= high {
+//            let mid = (low + high) / 2
+//            let midTime = identifiableData[mid].time
+//            
+//            if mid + 1 < identifiableData.count {
+//                let nextTime = identifiableData[mid + 1].time
+//                if midTime <= timePoint && timePoint <= nextTime{
+//                    return identifiableData[mid].angle
+//                    
+//                }
+//            }
+//            
+//            if timePoint < midTime {
+//                high = mid - 1
+//            } else {
+//                low = mid + 1
+//            }
+//        }
+//
+//        return identifiableData.last?.angle ?? 0
+//    }
+    
+    var body: some View {
+        VStack{
+            Text("Angle")
+                .font(.title)
+                .bold()
+            Chart(identifiableData){
+                RuleMark(y: .value("Threshold Velocity", 25)) // acquired from https://www.youtube.com/watch?v=4utsyqhnS4g&ab_channel=SeanAllen
+                    .foregroundStyle(Color.red)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [5]))
+                
+                RuleMark(y: .value("Threshold Velocity", -25)) // acquired from https://www.youtube.com/watch?v=4utsyqhnS4g&ab_channel=SeanAllen
+                    .foregroundStyle(Color.red)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [5]))
+                
+                LineMark(x: .value("Time", $0.time), y: .value("Angle", $0.angle))
+                    .interpolationMethod(.catmullRom)
+                
+                if let timePoint{
+                    RuleMark(x: .value("Time", timePoint))
+                        .foregroundStyle(.secondary.opacity(0.3))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5]))
+                    
+                }
+            }
+        }
+        .frame(width: UIScreen.main.bounds.width, height: 400)
+        .chartScrollableAxes(.horizontal) // from https://www.youtube.com/watch?v=9nQh5QofS8c&ab_channel=StewartLynch
+//        .chartXSelection(value: $timePoint)
+    }
+    
+}
+
+
+// Data struct for points for velocity/angle graphs
+struct VelocityPoint: Identifiable{
+    var time: Double
+    var velocity: Double
+    var id = UUID()
+}
+
+struct AnglePoint: Identifiable{
+    var time: Double
+    var angle: Double
+    var id = UUID()
 }
 
 
